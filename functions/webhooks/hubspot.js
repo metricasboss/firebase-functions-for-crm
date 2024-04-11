@@ -42,7 +42,7 @@ const hubspot = async (request, response) => {
         gaPayload
       );
 
-      return response.data;
+      return response.status === 204 ? true : false;
     } catch (error) {
       console.error(
         `Erro ao processar evento objectId ${objectId}: ${error.message}`
@@ -53,7 +53,7 @@ const hubspot = async (request, response) => {
 
   await Promise.all(promises);
 
-  response.status(200).send(promises);
+  response.status(200);
 };
 
 module.exports = hubspot;
