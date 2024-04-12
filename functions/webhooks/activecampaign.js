@@ -22,9 +22,11 @@ const activecampaign = async (request, response) => {
     } = fieldValuesResponse;
 
     const clientAndSessionId = fieldValues.reduce((obj, item) => {
-      if (item.field === "1") {
+      if (item.field === process.env.ACTIVE_CAMPAIGN_FIELDVALUE_CLIENT_ID) {
         obj.client_id = item.value;
-      } else if (item.field === "2") {
+      } else if (
+        item.field === process.env.ACTIVE_CAMPAIGN_FIELDVALUE_SESSION_ID
+      ) {
         obj.session_id = item.value;
       }
       return obj;
