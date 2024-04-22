@@ -1,36 +1,35 @@
 const axios = require("axios").default;
 
-const activecampaign = async (request, response) => {
+const rdstationcrm = async (request, response) => {
   // Puxa o payload da requisição
   const body = request.body;
 
   try {
     // Extraio o contactId para puxar as informações personalizadas, isso acontece por que o webhook da active
     // campaign não retorna diretamente os campos personalizados;
-    const { contactid } = body.deal;
+    const {
+      event_name,
+      document: { user },
+    } = body;
+
     // Monta o objeto de requisição para solicitar os campos personalizados para api da AC -> Active Campaign
     const requestOptions = {
       method: "GET",
-      url: `${process.env.ACTIVE_CAMPAIGN_URL}/api/3/contacts/${contactid}/fieldValues`,
-      headers: {
-        accept: "application/json",
-        "content-type": "application/json",
-        "Api-Token": process.env.ACTIVE_CAMPAIGN_TOKEN,
-      },
+      url: `https://crm.rdstation.com/api/v1/contacts/${user.id}?token=${process.env.RD_ACCESS_TOKEN}`,
     };
 
     // Recebo a resposta da solicitação
-    const fieldValuesResponse = await axios.request(requestOptions);
+    const contactResponse = await axios.request(requestOptions);
     const {
-      data: { fieldValues },
-    } = fieldValuesResponse;
+      data: { contact_custom_fields },
+    } = contactResponse;
 
     // Extraio o client_id e o session_id
-    const clientAndSessionId = fieldValues.reduce((obj, item) => {
-      if (item.field === process.env.ACTIVE_CAMPAIGN_FIELDVALUE_CLIENT_ID) {
+    const clientAndSessionId = contact_custom_fields.reduce((obj, item) => {
+      if (item.custom_field_id === process.env.RD_FIELDVALUE_CLIENT_ID) {
         obj.client_id = item.value;
       } else if (
-        item.field === process.env.ACTIVE_CAMPAIGN_FIELDVALUE_SESSION_ID
+        item.custom_field_id === process.env.RD_FIELDVALUE_SESSION_ID
       ) {
         obj.session_id = item.value;
       }
@@ -42,12 +41,10 @@ const activecampaign = async (request, response) => {
       client_id: clientAndSessionId.client_id,
       events: [
         {
-          name: body.type, // Evento personalizado
+          name: event_name, // Evento personalizado
           params: {
             session_id: clientAndSessionId.session_id,
             engagement_time_msec: "100",
-            stage_title: body.stage_title,
-            pipeline_title: body.pipeline_title,
           },
         },
       ],
@@ -65,4 +62,4 @@ const activecampaign = async (request, response) => {
   }
 };
 
-module.exports = activecampaign;
+module.exports = rdstationcrm;
